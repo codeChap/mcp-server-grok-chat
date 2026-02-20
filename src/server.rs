@@ -10,7 +10,7 @@ use tracing::debug;
 
 use crate::api::{
     ChatMessage, ChatRequest, ChatResponse, EmbeddingRequest, EmbeddingResponse, ModelsResponse,
-    XaiClient,
+    ResponsesMessage, ResponsesRequest, ResponsesResponse, XaiClient,
 };
 use crate::params::{ChatParams, EmbeddingParams, SearchParams, SearchType, VisionParams};
 
@@ -125,7 +125,7 @@ impl GrokServer {
     fn search_tools(search_type: SearchType) -> Vec<Value> {
         let mut tools = Vec::new();
         if matches!(search_type, SearchType::Web | SearchType::Both) {
-            tools.push(serde_json::json!({ "type": "live_search" }));
+            tools.push(serde_json::json!({ "type": "web_search" }));
         }
         if matches!(search_type, SearchType::X | SearchType::Both) {
             tools.push(serde_json::json!({ "type": "x_search" }));
@@ -229,22 +229,32 @@ impl GrokServer {
 
         let search_type = p.search_type.unwrap_or_default();
 
-        let messages = Self::build_messages(p.system_prompt.as_deref(), None, &p.prompt)
-            .map_err(|e| McpError::invalid_params(e, None))?;
+        let mut input = Vec::new();
+        if let Some(sys) = &p.system_prompt {
+            input.push(ResponsesMessage::system(sys));
+        }
+        input.push(ResponsesMessage::user(&p.prompt));
 
         let tools = Self::search_tools(search_type);
 
-        let req = Self::build_chat_request(
-            p.model.as_deref(),
-            messages,
-            p.temperature,
-            p.max_tokens,
-            None,
-            Some(tools),
-        )
-        .map_err(|e| McpError::invalid_params(e, None))?;
+        let req = ResponsesRequest {
+            model: p.model.unwrap_or_else(|| DEFAULT_MODEL.into()),
+            input,
+            temperature: p.temperature,
+            max_output_tokens: p.max_tokens,
+            tools: Some(tools),
+        };
 
-        self.do_chat(&req).await
+        match self
+            .client
+            .request::<_, ResponsesResponse>(Method::POST, "/responses", Some(&req))
+            .await
+        {
+            Ok(resp) => Ok(CallToolResult::success(vec![Content::text(
+                resp.to_string(),
+            )])),
+            Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
+        }
     }
 
     #[tool(description = "Generate text embeddings using Grok's embedding model.")]
@@ -446,7 +456,7 @@ mod tests {
     fn search_tools_web_only() {
         let tools = GrokServer::search_tools(SearchType::Web);
         assert_eq!(tools.len(), 1);
-        assert_eq!(tools[0]["type"], "live_search");
+        assert_eq!(tools[0]["type"], "web_search");
     }
 
     #[test]

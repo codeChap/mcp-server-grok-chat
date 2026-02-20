@@ -142,6 +142,117 @@ pub struct Usage {
 }
 
 // ---------------------------------------------------------------------------
+// Responses API types (for search tools: web_search, x_search)
+// ---------------------------------------------------------------------------
+
+/// A request to the /v1/responses endpoint.
+#[derive(Serialize)]
+pub struct ResponsesRequest {
+    pub model: String,
+    pub input: Vec<ResponsesMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_output_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<Value>>,
+}
+
+/// A message in a Responses API request.
+#[derive(Debug, Serialize, Clone)]
+pub struct ResponsesMessage {
+    pub role: String,
+    pub content: String,
+}
+
+impl ResponsesMessage {
+    pub fn system(text: &str) -> Self {
+        Self {
+            role: "system".into(),
+            content: text.into(),
+        }
+    }
+
+    pub fn user(text: &str) -> Self {
+        Self {
+            role: "user".into(),
+            content: text.into(),
+        }
+    }
+}
+
+/// The response from the /v1/responses endpoint.
+#[derive(Debug, Deserialize)]
+pub struct ResponsesResponse {
+    pub output: Vec<ResponsesOutput>,
+    pub usage: Option<ResponsesUsage>,
+}
+
+/// A single output item from the Responses API.
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct ResponsesOutput {
+    #[serde(default)]
+    pub role: Option<String>,
+    #[serde(default)]
+    pub content: Option<Vec<ResponsesContent>>,
+    #[serde(default, rename = "type")]
+    pub output_type: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
+/// Content block within a Responses API output.
+#[derive(Debug, Deserialize)]
+pub struct ResponsesContent {
+    #[serde(rename = "type")]
+    pub content_type: String,
+    #[serde(default)]
+    pub text: Option<String>,
+}
+
+/// Usage stats from the Responses API.
+#[derive(Debug, Deserialize)]
+pub struct ResponsesUsage {
+    pub input_tokens: u32,
+    pub output_tokens: u32,
+}
+
+impl fmt::Display for ResponsesResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut first = true;
+        for output in &self.output {
+            // Only display message-type outputs with content
+            if let Some(content) = &output.content {
+                for block in content {
+                    if block.content_type == "output_text" {
+                        if let Some(text) = &block.text {
+                            if !first {
+                                writeln!(f)?;
+                            }
+                            first = false;
+                            write!(f, "{text}")?;
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some(usage) = &self.usage {
+            write!(
+                f,
+                "\n[tokens: {} input + {} output = {} total]",
+                usage.input_tokens,
+                usage.output_tokens,
+                usage.input_tokens + usage.output_tokens
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Embeddings API types
 // ---------------------------------------------------------------------------
 
