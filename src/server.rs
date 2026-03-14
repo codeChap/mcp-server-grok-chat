@@ -10,11 +10,11 @@ use tracing::debug;
 
 use crate::api::{
     ChatMessage, ChatRequest, ChatResponse, EmbeddingRequest, EmbeddingResponse, ModelsResponse,
-    ResponsesMessage, ResponsesRequest, ResponsesResponse, XaiClient,
+    ReasoningConfig, ResponsesMessage, ResponsesRequest, ResponsesResponse, XaiClient,
 };
 use crate::params::{ChatParams, EmbeddingParams, SearchParams, SearchType, VisionParams};
 
-const DEFAULT_MODEL: &str = "grok-4-1-fast-non-reasoning";
+const DEFAULT_MODEL: &str = "grok-4.20-experimental-beta-0304-non-reasoning";
 const DEFAULT_EMBEDDING_MODEL: &str = "grok-2-text-embedding";
 
 /// Valid roles for chat messages.
@@ -121,6 +121,49 @@ impl GrokServer {
         }
     }
 
+    /// Check if a model slug is the multi-agent variant (requires Responses API).
+    fn is_multi_agent_model(model: &str) -> bool {
+        model.contains("multi-agent")
+    }
+
+    /// Validate reasoning_effort is one of the accepted values.
+    fn validate_reasoning_effort(effort: Option<&str>) -> Result<(), McpError> {
+        if let Some(e) = effort {
+            const VALID: &[&str] = &["low", "medium", "high", "xhigh"];
+            if !VALID.contains(&e) {
+                return Err(McpError::invalid_params(
+                    format!(
+                        "reasoning_effort must be one of: {}, got \"{e}\"",
+                        VALID.join(", ")
+                    ),
+                    None,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Build a ReasoningConfig from an optional effort string.
+    fn build_reasoning(effort: Option<&str>) -> Option<ReasoningConfig> {
+        effort.map(|e| ReasoningConfig {
+            effort: e.to_string(),
+        })
+    }
+
+    /// Send a request via the Responses API and return the formatted result.
+    async fn do_responses(&self, req: &ResponsesRequest) -> Result<CallToolResult, McpError> {
+        match self
+            .client
+            .request::<_, ResponsesResponse>(Method::POST, "/responses", Some(req))
+            .await
+        {
+            Ok(resp) => Ok(CallToolResult::success(vec![Content::text(
+                resp.to_string(),
+            )])),
+            Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
+        }
+    }
+
     /// Build search tool definitions for the xAI agent tools API.
     fn search_tools(search_type: SearchType) -> Vec<Value> {
         let mut tools = Vec::new();
@@ -155,7 +198,8 @@ impl GrokServer {
 
     #[tool(
         description = "Send a chat completion request to Grok. Supports multi-turn conversations, \
-                           structured output via JSON schema, and model selection."
+                           structured output via JSON schema, model selection, and multi-agent \
+                           research (when using the grok-4.20-multi-agent model)."
     )]
     async fn chat(
         &self,
@@ -163,13 +207,36 @@ impl GrokServer {
     ) -> Result<CallToolResult, McpError> {
         debug!(model = ?p.model, "chat tool called");
         Self::validate_temperature(p.temperature)?;
+        Self::validate_reasoning_effort(p.reasoning_effort.as_deref())?;
+
+        let model = p.model.as_deref().unwrap_or(DEFAULT_MODEL);
+
+        // Multi-agent models require the Responses API, not Chat Completions.
+        if Self::is_multi_agent_model(model) {
+            let mut input = Vec::new();
+            if let Some(sys) = &p.system_prompt {
+                input.push(ResponsesMessage::system(sys));
+            }
+            input.push(ResponsesMessage::user(&p.prompt));
+
+            let req = ResponsesRequest {
+                model: model.into(),
+                input,
+                temperature: p.temperature,
+                max_output_tokens: p.max_tokens,
+                tools: None,
+                reasoning: Self::build_reasoning(p.reasoning_effort.as_deref()),
+            };
+
+            return self.do_responses(&req).await;
+        }
 
         let messages =
             Self::build_messages(p.system_prompt.as_deref(), p.messages.as_deref(), &p.prompt)
                 .map_err(|e| McpError::invalid_params(e, None))?;
 
         let req = Self::build_chat_request(
-            p.model.as_deref(),
+            Some(model),
             messages,
             p.temperature,
             p.max_tokens,
@@ -226,6 +293,7 @@ impl GrokServer {
     ) -> Result<CallToolResult, McpError> {
         debug!(model = ?p.model, search_type = ?p.search_type, "chat_with_search tool called");
         Self::validate_temperature(p.temperature)?;
+        Self::validate_reasoning_effort(p.reasoning_effort.as_deref())?;
 
         let search_type = p.search_type.unwrap_or_default();
 
@@ -243,18 +311,10 @@ impl GrokServer {
             temperature: p.temperature,
             max_output_tokens: p.max_tokens,
             tools: Some(tools),
+            reasoning: Self::build_reasoning(p.reasoning_effort.as_deref()),
         };
 
-        match self
-            .client
-            .request::<_, ResponsesResponse>(Method::POST, "/responses", Some(&req))
-            .await
-        {
-            Ok(resp) => Ok(CallToolResult::success(vec![Content::text(
-                resp.to_string(),
-            )])),
-            Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
-        }
+        self.do_responses(&req).await
     }
 
     #[tool(description = "Generate text embeddings using Grok's embedding model.")]
@@ -326,22 +386,12 @@ impl GrokServer {
 #[tool_handler]
 impl ServerHandler for GrokServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            protocol_version: ProtocolVersion::default(),
-            capabilities: ServerCapabilities::builder().enable_tools().build(),
-            server_info: Implementation {
-                name: "grok-chat".into(),
-                title: None,
-                version: env!("CARGO_PKG_VERSION").into(),
-                icons: None,
-                website_url: None,
-            },
-            instructions: Some(
+        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+            .with_server_info(Implementation::new("grok-chat", env!("CARGO_PKG_VERSION")))
+            .with_instructions(
                 "xAI Grok MCP server. Tools: chat, chat_with_vision, chat_with_search, \
-                 embedding, list_models."
-                    .into(),
-            ),
-        }
+                 embedding, list_models.",
+            )
     }
 }
 

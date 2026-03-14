@@ -156,6 +156,15 @@ pub struct ResponsesRequest {
     pub max_output_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<ReasoningConfig>,
+}
+
+/// Reasoning configuration for the Responses API.
+/// Controls agent count for the multi-agent model.
+#[derive(Debug, Serialize)]
+pub struct ReasoningConfig {
+    pub effort: String,
 }
 
 /// A message in a Responses API request.
