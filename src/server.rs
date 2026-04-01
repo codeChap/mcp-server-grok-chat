@@ -14,7 +14,7 @@ use crate::api::{
 };
 use crate::params::{ChatParams, EmbeddingParams, SearchParams, SearchType, VisionParams};
 
-const DEFAULT_MODEL: &str = "grok-4.20-experimental-beta-0304-non-reasoning";
+const DEFAULT_MODEL: &str = "grok-4.20-experimental-beta-0304";
 const DEFAULT_EMBEDDING_MODEL: &str = "grok-2-text-embedding";
 
 /// Valid roles for chat messages.

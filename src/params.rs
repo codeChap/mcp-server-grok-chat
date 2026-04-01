@@ -54,8 +54,8 @@ pub struct ChatParams {
     pub messages: Option<String>,
 
     #[schemars(
-        description = "Model to use. Defaults to grok-4.20-experimental-beta-0304-non-reasoning. \
-                        Options: grok-4.20-experimental-beta-0304-reasoning, \
+        description = "Model to use. Defaults to grok-4.20-experimental-beta-0304. \
+                        Options: grok-4.20-experimental-beta-0304, \
                         grok-4.20-experimental-beta-0304-non-reasoning, \
                         grok-4.20-multi-agent-experimental-beta-0304, \
                         grok-4-1-fast-reasoning, grok-4-1-fast-non-reasoning, \
@@ -97,7 +97,7 @@ pub struct VisionParams {
     pub detail: Option<ImageDetail>,
 
     #[schemars(
-        description = "Model to use. Defaults to grok-4.20-experimental-beta-0304-non-reasoning. \
+        description = "Model to use. Defaults to grok-4.20-experimental-beta-0304. \
                         Must be a vision-capable model."
     )]
     pub model: Option<String>,
@@ -123,7 +123,7 @@ pub struct SearchParams {
     )]
     pub search_type: Option<SearchType>,
 
-    #[schemars(description = "Model to use. Defaults to grok-4.20-experimental-beta-0304-non-reasoning.")]
+    #[schemars(description = "Model to use. Defaults to grok-4.20-experimental-beta-0304.")]
     pub model: Option<String>,
 
     #[schemars(description = "Sampling temperature (0.0 - 2.0)")]
