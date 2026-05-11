@@ -54,12 +54,8 @@ pub struct ChatParams {
     pub messages: Option<String>,
 
     #[schemars(
-        description = "Model to use. Defaults to grok-4.20-experimental-beta-0304. \
-                        Options: grok-4.20-experimental-beta-0304, \
-                        grok-4.20-experimental-beta-0304-non-reasoning, \
-                        grok-4.20-multi-agent-experimental-beta-0304, \
-                        grok-4-1-fast-reasoning, grok-4-1-fast-non-reasoning, \
-                        grok-4-fast-reasoning, grok-4-0709, grok-3, grok-3-mini, grok-code-fast-1"
+        description = "Model ID. Defaults to grok-4.3. \
+                        Call the list_models tool for the current set of available models."
     )]
     pub model: Option<String>,
 
@@ -76,10 +72,12 @@ pub struct ChatParams {
     pub response_schema: Option<String>,
 
     #[schemars(
-        description = "Reasoning effort level. For the multi-agent model, this controls agent count: \
+        description = "Reasoning effort. On grok-4.3, controls native reasoning depth: \
+                        \"low\", \"medium\", or \"high\". \
+                        On multi-agent models, controls agent count: \
                         \"low\"/\"medium\" = 4 agents (quick research), \
                         \"high\"/\"xhigh\" = 16 agents (deep research). \
-                        Valid values: \"low\", \"medium\", \"high\", \"xhigh\"."
+                        \"xhigh\" is multi-agent only and will error on other models."
     )]
     pub reasoning_effort: Option<String>,
 }
@@ -97,8 +95,8 @@ pub struct VisionParams {
     pub detail: Option<ImageDetail>,
 
     #[schemars(
-        description = "Model to use. Defaults to grok-4.20-experimental-beta-0304. \
-                        Must be a vision-capable model."
+        description = "Model ID. Defaults to grok-4.3. Must be a vision-capable model. \
+                        Call the list_models tool for the current set of available models."
     )]
     pub model: Option<String>,
 
@@ -123,7 +121,10 @@ pub struct SearchParams {
     )]
     pub search_type: Option<SearchType>,
 
-    #[schemars(description = "Model to use. Defaults to grok-4.20-experimental-beta-0304.")]
+    #[schemars(
+        description = "Model ID. Defaults to grok-4.3. \
+                        Call the list_models tool for the current set of available models."
+    )]
     pub model: Option<String>,
 
     #[schemars(description = "Sampling temperature (0.0 - 2.0)")]
@@ -133,10 +134,12 @@ pub struct SearchParams {
     pub max_tokens: Option<u32>,
 
     #[schemars(
-        description = "Reasoning effort level. For the multi-agent model, this controls agent count: \
+        description = "Reasoning effort. On grok-4.3, controls native reasoning depth: \
+                        \"low\", \"medium\", or \"high\". \
+                        On multi-agent models, controls agent count: \
                         \"low\"/\"medium\" = 4 agents (quick research), \
                         \"high\"/\"xhigh\" = 16 agents (deep research). \
-                        Valid values: \"low\", \"medium\", \"high\", \"xhigh\"."
+                        \"xhigh\" is multi-agent only and will error on other models."
     )]
     pub reasoning_effort: Option<String>,
 }

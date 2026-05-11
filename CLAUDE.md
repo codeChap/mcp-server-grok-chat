@@ -39,8 +39,8 @@ Five source files, no sub-crates:
 
 ## Key Constants
 
-- Default chat model: `grok-4.20-experimental-beta-0304` (in `server.rs`)
-- Default embedding model: `grok-2-text-embedding` (in `server.rs`)
+- Default chat model: `grok-4.3` (in `server.rs`)
+- Default embedding model: `grok-2-text-embedding` (in `server.rs`; not in `/v1/models` as of 2026-05-11 — verify before assuming it still works)
 - API base URL: `https://api.x.ai/v1` (in `api.rs`)
 - HTTP timeout: 30 seconds (in `api.rs`)
 

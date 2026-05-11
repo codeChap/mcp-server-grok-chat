@@ -234,14 +234,14 @@ impl fmt::Display for ResponsesResponse {
             // Only display message-type outputs with content
             if let Some(content) = &output.content {
                 for block in content {
-                    if block.content_type == "output_text" {
-                        if let Some(text) = &block.text {
-                            if !first {
-                                writeln!(f)?;
-                            }
-                            first = false;
-                            write!(f, "{text}")?;
+                    if block.content_type == "output_text"
+                        && let Some(text) = &block.text
+                    {
+                        if !first {
+                            writeln!(f)?;
                         }
+                        first = false;
+                        write!(f, "{text}")?;
                     }
                 }
             }

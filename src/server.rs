@@ -14,7 +14,7 @@ use crate::api::{
 };
 use crate::params::{ChatParams, EmbeddingParams, SearchParams, SearchType, VisionParams};
 
-const DEFAULT_MODEL: &str = "grok-4.20-experimental-beta-0304";
+const DEFAULT_MODEL: &str = "grok-4.3";
 const DEFAULT_EMBEDDING_MODEL: &str = "grok-2-text-embedding";
 
 /// Valid roles for chat messages.
@@ -199,7 +199,7 @@ impl GrokServer {
     #[tool(
         description = "Send a chat completion request to Grok. Supports multi-turn conversations, \
                            structured output via JSON schema, model selection, and multi-agent \
-                           research (when using the grok-4.20-multi-agent model)."
+                           research (when using a multi-agent model)."
     )]
     async fn chat(
         &self,

@@ -18,20 +18,20 @@ Communicates via stdio using JSON-RPC 2.0, like all MCP servers.
 
 Send a chat completion request. Supports multi-turn conversations via a JSON message history array, system prompts, structured output via JSON schema, temperature control, model selection, and multi-agent research.
 
-When using the `grok-4.20-multi-agent-experimental-beta-0304` model, the request is automatically routed through the Responses API. The multi-agent model dispatches your query to multiple agents that research in parallel, then synthesizes their findings. Use `reasoning_effort` to control agent count.
+When using a multi-agent model (any model ID containing `multi-agent`), the request is automatically routed through the Responses API. The multi-agent model dispatches your query to multiple agents that research in parallel, then synthesizes their findings. Use `reasoning_effort` to control agent count. Call the `list_models` tool to see which multi-agent models are currently available.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `prompt` | string | yes | The user message to send |
-| `model` | string | no | Model to use (default: `grok-4.20-experimental-beta-0304-non-reasoning`) |
+| `model` | string | no | Model ID (default: `grok-4.3`). Call `list_models` for the current set. |
 | `system_prompt` | string | no | System prompt to set context |
 | `messages` | string | no | Full conversation history as JSON array of `{role, content}` objects |
 | `temperature` | float | no | Sampling temperature (0.0 - 2.0) |
 | `max_tokens` | integer | no | Maximum tokens to generate |
 | `response_schema` | string | no | JSON schema string to enforce structured output |
-| `reasoning_effort` | string | no | Reasoning effort: `low`/`medium` (4 agents) or `high`/`xhigh` (16 agents). For multi-agent model. |
+| `reasoning_effort` | string | no | On `grok-4.3`: `low`/`medium`/`high` controls native reasoning depth. On multi-agent models: `low`/`medium` = 4 agents, `high`/`xhigh` = 16 agents (`xhigh` is multi-agent-only). |
 
 ### chat_with_vision
 
@@ -43,7 +43,7 @@ Analyse an image using Grok's vision capabilities.
 |------|------|----------|-------------|
 | `prompt` | string | yes | Text prompt describing what to analyse |
 | `image_url` | string | yes | URL of the image (must be http:// or https://) |
-| `model` | string | no | Model to use (default: `grok-4.20-experimental-beta-0304-non-reasoning`) |
+| `model` | string | no | Model ID (default: `grok-4.3`). Must be a vision-capable model. Call `list_models` for the current set. |
 | `detail` | string | no | Image detail level: `low` or `high` (default: `high`) |
 | `temperature` | float | no | Sampling temperature (0.0 - 2.0) |
 | `max_tokens` | integer | no | Maximum tokens to generate |
@@ -58,11 +58,11 @@ Chat with Grok using live web search and/or X (Twitter) search. The model automa
 |------|------|----------|-------------|
 | `prompt` | string | yes | The user message to send |
 | `search_type` | string | no | Search type: `web`, `x`, or `both` (default: `both`) |
-| `model` | string | no | Model to use (default: `grok-4.20-experimental-beta-0304-non-reasoning`) |
+| `model` | string | no | Model ID (default: `grok-4.3`). Call `list_models` for the current set. |
 | `system_prompt` | string | no | System prompt to set context |
 | `temperature` | float | no | Sampling temperature (0.0 - 2.0) |
 | `max_tokens` | integer | no | Maximum tokens to generate |
-| `reasoning_effort` | string | no | Reasoning effort: `low`/`medium` (4 agents) or `high`/`xhigh` (16 agents). For multi-agent model. |
+| `reasoning_effort` | string | no | On `grok-4.3`: `low`/`medium`/`high` controls native reasoning depth. On multi-agent models: `low`/`medium` = 4 agents, `high`/`xhigh` = 16 agents (`xhigh` is multi-agent-only). |
 
 ### embedding
 
