@@ -53,10 +53,8 @@ pub struct ChatParams {
     )]
     pub messages: Option<String>,
 
-    #[schemars(
-        description = "Model ID. Defaults to grok-4.3. \
-                        Call the list_models tool for the current set of available models."
-    )]
+    #[schemars(description = "Model ID. Defaults to grok-4.3. \
+                        Call the list_models tool for the current set of available models.")]
     pub model: Option<String>,
 
     #[schemars(description = "Sampling temperature (0.0 - 2.0)")]
@@ -121,10 +119,8 @@ pub struct SearchParams {
     )]
     pub search_type: Option<SearchType>,
 
-    #[schemars(
-        description = "Model ID. Defaults to grok-4.3. \
-                        Call the list_models tool for the current set of available models."
-    )]
+    #[schemars(description = "Model ID. Defaults to grok-4.3. \
+                        Call the list_models tool for the current set of available models.")]
     pub model: Option<String>,
 
     #[schemars(description = "Sampling temperature (0.0 - 2.0)")]
